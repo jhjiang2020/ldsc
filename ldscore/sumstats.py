@@ -283,6 +283,8 @@ def cell_type_specific(args, log):
     s = lambda x: np.array(x).reshape((n_snp, 1))
     results_columns = ['Name', 'Coefficient', 'Coefficient_std_error', 'Coefficient_P_value']
     results_data = []
+    if args.ref_ld_cts:
+        args.ref_ld_chr_cts = args.ref_ld_cts
     for (name, ct_ld_chr) in [x.split() for x in open(args.ref_ld_chr_cts).readlines()]:
         ref_ld_cts_allsnps = _read_chr_split_files(ct_ld_chr, None, log,
                                    'cts reference panel LD Score', ps.ldscore_fromlist)

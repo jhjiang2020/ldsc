@@ -6,6 +6,7 @@ import argparse
 from pybedtools import BedTool
 import gzip
 import os
+import sys
 
 def gene_set_to_bed(args):
     print('making gene set bed file')
@@ -38,7 +39,7 @@ def make_annot_single(df_bim, bimbed, bed_for_annot):
     return df_annot[['ANNOT']].astype(float)
 
 
-def make_annot_files(args, bed_for_annot, list_input=False):
+def make_annot_files(args, bed_for_annot, list_input=False, header=None):
     df_bim = pd.read_csv(args.bimfile,
                 delim_whitespace=True, usecols = [0,1,2,3], names = ['CHR','SNP','CM','BP'])
     iter_bim = [['chr'+str(x1), x2 - 1, x2] for (x1, x2) in np.array(df_bim[['CHR', 'BP']])]
@@ -51,9 +52,13 @@ def make_annot_files(args, bed_for_annot, list_input=False):
         ## if input is a list of BedTool objects
         df_annot=pd.DataFrame()
         for i in range(len(bed_for_annot)):
-            print('making annot file with ' + str(i+1) + '/' + str(len(bed_for_annot)) + 'bed files')
+            sys.stderr.write('making annot file with ' + str(i+1) + '/' + str(len(bed_for_annot)) + 'bed files\n')
+            #print('making annot file with ' + str(i+1) + '/' + str(len(bed_for_annot)) + 'bed files')
             df_annot_1 = make_annot_single(df_bim, bimbed, bed_for_annot[i])
-            df_annot_1 = df_annot_1.rename(columns={'ANNOT': 'ANNOT_'+ str(i)})
+            if header:
+                df_annot_1 = df_annot_1.rename(columns={'ANNOT': header[i]})
+            else:
+                df_annot_1 = df_annot_1.rename(columns={'ANNOT': 'ANNOT_'+ str(i)})
             df_annot = pd.concat([df_annot, df_annot_1], axis=1)
     
     if args.baseline:
@@ -89,11 +94,15 @@ if __name__ == '__main__':
         make_annot_files(args, bed_for_annot)
     else:
         bed_for_annot_list=[]
+        annot_header=[]
         for file in args.bed_file.split(","):
+            annot = os.path.basename(file).split('.')[0]
+            annot_header.append(annot)
+            #print('reading bed file for ' + annot )
             bed_for_annot = BedTool(file).sort()
             if not args.nomerge:
                 bed_for_annot = bed_for_annot.merge()
             bed_for_annot_list.append(bed_for_annot)
-    
-        make_annot_files(args, bed_for_annot_list, list_input=True)
+
+        make_annot_files(args, bed_for_annot_list, True, annot_header)
 

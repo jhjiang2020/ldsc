@@ -493,7 +493,7 @@ parser.add_argument('--h2', default=None, type=str,
     '--h2 requires at minimum also setting the --ref-ld and --w-ld flags.')
 parser.add_argument('--h2-cts', default=None, type=str,
     help='Filename for a .sumstats[.gz] file for cell-type-specific analysis. '
-    '--h2-cts requires the --ref-ld-chr, --w-ld, and --ref-ld-chr-cts flags.')
+    '--h2-cts requires the --ref-ld[-chr], --w-ld, and --ref-ld[-chr]-cts flags.')
 parser.add_argument('--rg', default=None, type=str,
     help='Comma-separated list of prefixes of .chisq filed for genetic correlation estimation.')
 parser.add_argument('--ref-ld', default=None, type=str,
@@ -541,6 +541,8 @@ parser.add_argument('--two-step', default=None, type=float,
 parser.add_argument('--chisq-max', default=None, type=float,
     help='Max chi^2.')
 parser.add_argument('--ref-ld-chr-cts', default=None, type=str,
+    help='Name of a file that has a list of file name prefixes for cell-type-specific analysis (by chr).')
+parser.add_argument('--ref-ld-cts', default=None, type=str,
     help='Name of a file that has a list of file name prefixes for cell-type-specific analysis.')
 parser.add_argument('--print-all-cts', action='store_true', default=False)
 
