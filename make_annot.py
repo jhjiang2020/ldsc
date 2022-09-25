@@ -31,9 +31,10 @@ def make_annot_single(df_bim, bimbed, bed_for_annot):
         score = [float(x.fields[score_col-1]) for x in annotbed]
 
     bp = [x.start + 1 for x in annotbed]
-    df_int = pd.DataFrame({'BP': bp, 'ANNOT':score})
+    chrom = [x.chrom.replace("chr","") for x in annotbed]
+    df_int = pd.DataFrame({'CHR': chrom,'BP': bp, 'ANNOT':score})
 
-    df_annot = pd.merge(df_bim, df_int.drop_duplicates(), how='left', on='BP')
+    df_annot = pd.merge(df_bim, df_int.drop_duplicates(), how='left', on=['CHR','BP'])
     df_annot.fillna(0, inplace=True)
 
     return df_annot[['ANNOT']].astype(float)
