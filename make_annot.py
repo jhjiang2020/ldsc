@@ -41,8 +41,7 @@ def make_annot_single(df_bim, bimbed, bed_for_annot):
 
 
 def make_annot_files(args, bed_for_annot, list_input=False, header=None):
-    df_bim = pd.read_csv(args.bimfile,
-                delim_whitespace=True, usecols = [0,1,2,3], names = ['CHR','SNP','CM','BP'])
+    df_bim = pd.read_csv(args.bimfile, delim_whitespace=True, usecols = [0,1,2,3], names = ['CHR','SNP','CM','BP'], dtype={'CHR': 'object'})
     iter_bim = [['chr'+str(x1), x2 - 1, x2] for (x1, x2) in np.array(df_bim[['CHR', 'BP']])]
     bimbed = BedTool(iter_bim)
     if not list_input:
