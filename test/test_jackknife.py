@@ -2,9 +2,9 @@
 import ldscore.jackknife as jk
 import unittest
 import numpy as np
-import nose
+import pytest
 from numpy.testing import assert_array_equal, assert_array_almost_equal
-from nose.tools import assert_raises
+from pytest import assert_raises
 
 
 class Test_Jackknife(unittest.TestCase):
@@ -53,7 +53,7 @@ class Test_Jackknife(unittest.TestCase):
             assert_array_equal(x, np.ones_like(delete_values))
 
         est = est.T
-        nose.tools.assert_raises(
+        pytest.raises(
             ValueError, jk.Jackknife.delete_values_to_pseudovalues, delete_values, est)
 
 

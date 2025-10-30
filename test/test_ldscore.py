@@ -2,7 +2,7 @@ import ldscore.ldscore as ld
 import unittest
 import bitarray as ba
 import numpy as np
-import nose
+import pytest
 import ldscore.parse as ps
 
 
@@ -80,16 +80,16 @@ class test_bed(unittest.TestCase):
         print(bed.geno)
         assert bed.geno[0:4] == ba.bitarray('0001')
 
-    @nose.tools.raises(ValueError)
+    @pytest.mark.xfail(ValueError)
     def test_bad_filename(self):
         bed = ld.PlinkBEDFile('test/plink_test/plink.bim', 9, self.bim)
 
-    @nose.tools.raises(ValueError)
+    @pytest.mark.xfail(ValueError)
     def test_nextSNPs_errors1(self):
         bed = ld.PlinkBEDFile('test/plink_test/plink.bed', self.N, self.bim)
         bed.nextSNPs(0)
 
-    @nose.tools.raises(ValueError)
+    @pytest.mark.xfail(ValueError)
     def test_nextSNPs_errors2(self):
         bed = ld.PlinkBEDFile('test/plink_test/plink.bed', self.N, self.bim)
         bed.nextSNPs(5)

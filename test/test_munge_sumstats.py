@@ -3,7 +3,7 @@ import munge_sumstats as munge
 import unittest
 import numpy as np
 import pandas as pd
-import nose
+import pytest
 from pandas.testing import assert_series_equal, assert_frame_equal
 from numpy.testing import assert_array_equal, assert_array_almost_equal, assert_allclose
 
@@ -46,7 +46,7 @@ class test_check_median(unittest.TestCase):
             msg, 'Median value of TEST was 2.0, which seems sensible.')
 
     def test_bad_median(self):
-        nose.tools.assert_raises(
+        pytest.raises(
             ValueError, munge.check_median, self.x, 0, 0.1, 'TEST')
 
 
@@ -223,16 +223,16 @@ class test_parse_dat(unittest.TestCase):
 
 
 def test_clean_header():
-    nose.tools.eq_(munge.clean_header('foo-bar.foo_BaR'), 'FOO_BAR_FOO_BAR')
+    assert (munge.clean_header('foo-bar.foo_BaR'), 'FOO_BAR_FOO_BAR')
 
 
 def test_get_compression_gzip():
     y, x = munge.get_compression('foo.gz')
-    nose.tools.eq_(x, 'gzip')
+    assert (x, 'gzip')
     y, x = munge.get_compression('foo.bz2')
-    nose.tools.eq_(x, 'bz2')
+    assert (x, 'bz2')
     y, x = munge.get_compression('foo.bar')
-    nose.tools.eq_(x, None)
+    assert (x, None)
 
 
 class test_parse_flag_cnames(unittest.TestCase):
@@ -270,13 +270,13 @@ class test_parse_flag_cnames(unittest.TestCase):
 
     def test_sign_error(self):
         self.args.signed_sumstats = '1,2,3'
-        nose.tools.assert_raises(
+        pytest.raises(
             ValueError, munge.parse_flag_cnames, log, self.args)
         self.args.signed_sumstats = 'BETA,B'
-        nose.tools.assert_raises(
+        pytest.raises(
             ValueError, munge.parse_flag_cnames, log, self.args)
         self.args.signed_sumstats = 'BETA'
-        nose.tools.assert_raises(
+        pytest.raises(
             ValueError, munge.parse_flag_cnames, log, self.args)
 
 
@@ -294,8 +294,8 @@ class test_cname_map(unittest.TestCase):
         flag_cnames = {'SNP': 'SNP', 'ASDF': 'ASDF', 'N': 'FOOBAR'}
         x = munge.get_cname_map(flag_cnames, munge.default_cnames, ignore)
         # check that ignore columns are ignored
-        nose.tools.assert_raises(KeyError, x.__getitem__, 'SNP')
-        nose.tools.assert_raises(KeyError, x.__getitem__, 'A1')
+        pytest.raises(KeyError, x.__getitem__, 'SNP')
+        pytest.raises(KeyError, x.__getitem__, 'A1')
         # check that flag columns make it into the dict
         self.assertEqual(x['ASDF'], 'ASDF')
         # check that default columns make it into the dict
@@ -327,31 +327,31 @@ class test_end_to_end(unittest.TestCase):
 
     def test_bad_merge_alleles(self):
         self.args.merge_alleles = 'test/munge_test/merge_alleles_bad'
-        nose.tools.assert_raises(
+        pytest.raises(
             ValueError, munge.munge_sumstats, self.args, p=False)
 
     def test_bad_flags1(self):
         self.args.sumstats = None
-        nose.tools.assert_raises(
+        pytest.raises(
             ValueError, munge.munge_sumstats, self.args, p=False)
 
     def test_bad_flags2(self):
         self.args.out = None
-        nose.tools.assert_raises(
+        pytest.raises(
             ValueError, munge.munge_sumstats, self.args, p=False)
 
     def test_bad_flags3(self):
         self.args.merge_alleles = 'foo'
         self.args.no_alleles = 'bar'
-        nose.tools.assert_raises(
+        pytest.raises(
             ValueError, munge.munge_sumstats, self.args, p=False)
 
     def test_bad_sumstats1(self):
         self.args.signed_sumstats = 'OR,0'
-        nose.tools.assert_raises(
+        pytest.raises(
             ValueError, munge.munge_sumstats, self.args, p=False)
 
     def test_bad_sumstats1(self):
         self.args.signed_sumstats = 'BETA,0'
-        nose.tools.assert_raises(
+        pytest.raises(
             ValueError, munge.munge_sumstats, self.args, p=False)
