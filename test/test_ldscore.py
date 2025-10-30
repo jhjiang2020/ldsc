@@ -80,19 +80,19 @@ class test_bed(unittest.TestCase):
         print(bed.geno)
         assert bed.geno[0:4] == ba.bitarray('0001')
 
-    @pytest.mark.xfail(ValueError)
     def test_bad_filename(self):
-        bed = ld.PlinkBEDFile('test/plink_test/plink.bim', 9, self.bim)
+        with pytest.raises(ValueError):
+            bed = ld.PlinkBEDFile('test/plink_test/plink.bim', 9, self.bim)
 
-    @pytest.mark.xfail(ValueError)
     def test_nextSNPs_errors1(self):
         bed = ld.PlinkBEDFile('test/plink_test/plink.bed', self.N, self.bim)
-        bed.nextSNPs(0)
+        with pytest.raises(ValueError):
+            bed.nextSNPs(0)
 
-    @pytest.mark.xfail(ValueError)
     def test_nextSNPs_errors2(self):
         bed = ld.PlinkBEDFile('test/plink_test/plink.bed', self.N, self.bim)
-        bed.nextSNPs(5)
+        with pytest.raises(ValueError):
+            bed.nextSNPs(5)
 
     def test_nextSNPs(self):
         for b in [1, 2, 3]:

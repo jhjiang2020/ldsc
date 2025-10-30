@@ -223,16 +223,16 @@ class test_parse_dat(unittest.TestCase):
 
 
 def test_clean_header():
-    assert (munge.clean_header('foo-bar.foo_BaR'), 'FOO_BAR_FOO_BAR')
+    assert munge.clean_header('foo-bar.foo_BaR') == 'FOO_BAR_FOO_BAR'
 
 
 def test_get_compression_gzip():
     y, x = munge.get_compression('foo.gz')
-    assert (x, 'gzip')
+    assert x == 'gzip'
     y, x = munge.get_compression('foo.bz2')
-    assert (x, 'bz2')
+    assert x == 'bz2'
     y, x = munge.get_compression('foo.bar')
-    assert (x, None)
+    assert x is None
 
 
 class test_parse_flag_cnames(unittest.TestCase):
