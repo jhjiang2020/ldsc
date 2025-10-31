@@ -726,13 +726,22 @@ def munge_sumstats(args, p=True):
 
         (openfunc, compression) = get_compression(args.sumstats)
 
+        read_csv_args = {}
+        with openfunc(args.sumstats, 'rt') as f:
+            header = f.readline()
+        if '\t' in header:
+            read_csv_args['sep'] = '\t'
+        else:
+            read_csv_args['delim_whitespace'] = True
+
         # figure out which columns are going to involve sign information, so we can ensure
         # they're read as floats
         signed_sumstat_cols = [k for k,v in cname_translation.items() if v=='SIGNED_SUMSTAT']
-        dat_gen = pd.read_csv(args.sumstats, delim_whitespace=True, header=0,
+        dat_gen = pd.read_csv(args.sumstats, header=0,
                 compression=compression, usecols=cname_translation.keys(),
                 na_values=['.', 'NA'], iterator=True, chunksize=args.chunksize,
-                dtype={c:np.float64 for c in signed_sumstat_cols})
+                dtype={c:np.float64 for c in signed_sumstat_cols},
+                **read_csv_args)
 
         dat = parse_dat(dat_gen, cname_translation, merge_alleles, log, args)
         if len(dat) == 0:
