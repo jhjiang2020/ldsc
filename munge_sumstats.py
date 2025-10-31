@@ -125,7 +125,14 @@ numeric_cols = ['P', 'N', 'N_CAS', 'N_CON', 'Z', 'OR', 'BETA', 'LOG_ODDS', 'INFO
 def read_header(fh):
     '''Read the first line of a file and returns a list with the column names.'''
     (openfunc, compression) = get_compression(fh)
-    return [x.rstrip('\n') for x in openfunc(fh).readline().split()]
+    if compression:
+        with openfunc(fh, 'rt') as f:
+            line = f.readline()
+    else:
+        with openfunc(fh, 'r') as f:
+            line = f.readline()
+
+    return [x.rstrip('\n') for x in line.split()]
 
 
 def get_cname_map(flag, default, ignore):
@@ -144,7 +151,7 @@ def get_cname_map(flag, default, ignore):
     clean_ignore = [clean_header(x) for x in ignore]
     cname_map = {x: flag[x] for x in flag if x not in clean_ignore}
     cname_map.update(
-        {x: default[x] for x in default if x not in clean_ignore + flag.keys()})
+        {x: default[x] for x in default if x not in clean_ignore + list(flag.keys())})
     return cname_map
 
 
@@ -157,7 +164,7 @@ def get_compression(fh):
         openfunc = gzip.open
     elif fh.endswith('bz2'):
         compression = 'bz2'
-        openfunc = bz2.BZ2File
+        openfunc = bz2.open
     else:
         openfunc = open
         compression = None
@@ -239,10 +246,10 @@ def parse_dat(dat_gen, convert_colname, merge_alleles, log, args):
         sys.stdout.write('.')
         tot_snps += len(dat)
         old = len(dat)
-        dat = dat.dropna(axis=0, how="any", subset=filter(
-            lambda x: x != 'INFO', dat.columns)).reset_index(drop=True)
+        dat = dat.dropna(axis=0, how="any", subset=[
+            c for c in dat.columns if c != 'INFO']).reset_index(drop=True)
         drops['NA'] += old - len(dat)
-        dat.columns = map(lambda x: convert_colname[x], dat.columns)
+        dat.columns = [convert_colname[x] for x in dat.columns]
 
         wrong_types = [c for c in dat.columns if c in numeric_cols and not np.issubdtype(dat[c].dtype, np.number)]
         if len(wrong_types) > 0:
@@ -565,8 +572,8 @@ def munge_sumstats(args, p=True):
         cname_map = get_cname_map(
             flag_cnames, mod_default_cnames, ignore_cnames)
         if args.daner:
-            frq_u = filter(lambda x: x.startswith('FRQ_U_'), file_cnames)[0]
-            frq_a = filter(lambda x: x.startswith('FRQ_A_'), file_cnames)[0]
+            frq_u = list(filter(lambda x: x.startswith('FRQ_U_'), file_cnames))[0]
+            frq_a = list(filter(lambda x: x.startswith('FRQ_A_'), file_cnames))[0]
             N_cas = float(frq_a[6:])
             N_con = float(frq_u[6:])
             log.log(
@@ -575,12 +582,12 @@ def munge_sumstats(args, p=True):
             args.N_con = N_con
             # drop any N, N_cas, N_con or FRQ columns
             for c in ['N', 'N_CAS', 'N_CON', 'FRQ']:
-                for d in [x for x in cname_map if cname_map[x] == 'c']:
+                for d in [x for x in cname_map if cname_map[x] == c]:
                     del cname_map[d]
 
             cname_map[frq_u] = 'FRQ'
         elif args.daner_n:
-            frq_u = filter(lambda x: x.startswith('FRQ_U_'), file_cnames)[0]
+            frq_u = list(filter(lambda x: x.startswith('FRQ_U_'), file_cnames))[0]
             cname_map[frq_u] = 'FRQ'
             try:
                 dan_cas = clean_header(file_cnames[file_cnames.index('Nca')])
@@ -632,10 +639,55 @@ def munge_sumstats(args, p=True):
                 raise ValueError('Found {num} columns named {C}'.format(C=field,num=str(numk)))
 
         # check multiple different column names don't map to same data field
-        for head in cname_translation.values():
-            numc = cname_translation.values().count(head)
-            if numc > 1:
-                raise ValueError('Found {num} different {C} columns'.format(C=head,num=str(numc)))
+        flag_map = {
+            'SNP': '--snp', 'A1': '--a1', 'A2': '--a2', 'P': '--p',
+            'N': '--N-col', 'N_CAS': '--N-cas-col', 'N_CON': '--N-con-col',
+            'INFO': '--info', 'FRQ': '--frq', 'SIGNED_SUMSTAT': '--signed-sumstats',
+            'NSTUDY': '--nstudy'
+        }
+        for head in set(cname_translation.values()):
+            if head == 'INFO': # Multiple INFO columns are allowed
+                continue
+            
+            colliding_cols_orig = [k for k, v in cname_translation.items() if v == head]
+            if len(colliding_cols_orig) > 1:
+                # We have a collision.
+                
+                # What did the user specify for this `head`?
+                user_specified_cols = [k for k, v in flag_cnames.items() if v == head]
+                
+                # The keys of flag_cnames are cleaned. The colliding_cols_orig are not.
+                colliding_cols_clean = [clean_header(c) for c in colliding_cols_orig]
+                
+                chosen_col = None
+                if user_specified_cols:
+                    # User specified one or more columns for this head.
+                    # Let's see if any of them are in our file.
+                    for user_col in user_specified_cols:
+                        if user_col in colliding_cols_clean:
+                            chosen_col = user_col
+                            break # Take the first one.
+                
+                if chosen_col:
+                    # We have a chosen one. Remove others from cname_translation.
+                    for col_orig in colliding_cols_orig:
+                        if clean_header(col_orig) != chosen_col:
+                            del cname_translation[col_orig]
+                else:
+                    # No column was chosen. Either user didn't specify, or specified something not in the file.
+                    # Error out.
+                    flag = flag_map.get(head, '<flag>')
+                    
+                    # For signed stats, the head could be Z, BETA, etc. but the flag is --signed-sumstats
+                    if head in null_values:
+                        flag = '--signed-sumstats'
+
+                    raise ValueError('Found {num} different {C} columns: {cols}, please specify the {C} column with {flag}'.format(
+                        num=len(colliding_cols_orig),
+                        C=head,
+                        cols=', '.join(colliding_cols_orig),
+                        flag=flag
+                    ))
 
         if (not args.N) and (not (args.N_cas and args.N_con)) and ('N' not in cname_translation.values()) and\
                 (any(x not in cname_translation.values() for x in ['N_CAS', 'N_CON'])):
