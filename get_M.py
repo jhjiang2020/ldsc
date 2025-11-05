@@ -40,6 +40,12 @@ class Logger(object):
         print(msg, file=self.log_fh)
         print(msg)
 
+    def close(self):
+        '''
+        Close the log file.
+        '''
+        self.log_fh.close()
+
 
 def __filter__(fname, noun, verb, merge_obj):
     merged_list = None
@@ -55,7 +61,7 @@ def __filter__(fname, noun, verb, merge_obj):
             print(f(c, len_merged_list))
         else:
             error_msg = 'No {noun} retained for analysis'
-            raise ValueError(f(error_msg, 0))
+            raise ValueError(error_msg.format(noun=noun))
 
         return merged_list
 
@@ -92,7 +98,8 @@ def get_m(args, log):
                 annot_colnames = annot.df.columns[4:]
                 keep_snps = None
                 if np.any(annot.df.SNP.values != array_snps.df.SNP.values):
-                    raise ValueError('The .annot file must contain the same SNPs in the same'+\n                        ' order as the .bim file.')
+                    raise ValueError('The .annot file must contain the same SNPs in the same '
+                                     'order as the .bim file.')
         except Exception:
             log.log('Error parsing .annot file')
             raise
@@ -136,16 +143,16 @@ def get_m(args, log):
         M_5_50 = [np.sum(geno_array.maf > 0.05)]
 
     # print .M
-    fout_M = open(args.out + '.'+ file_suffix +'.M','w')
-    print('\t'.join(map(str,M)), file=fout_M)
-    fout_M.close()
-    log.log('Wrote M to {f}'.format(f=args.out + '.'+ file_suffix +'.M'))
+    fout_M_fname = args.out + '.'+ file_suffix +'.M'
+    with open(fout_M_fname, 'w') as fout_M:
+        print('\t'.join(map(str,M)), file=fout_M)
+    log.log('Wrote M to {f}'.format(f=fout_M_fname))
 
     # print .M_5_50
-    fout_M_5_50 = open(args.out + '.'+ file_suffix +'.M_5_50','w')
-    print('\t'.join(map(str,M_5_50)), file=fout_M_5_50)
-    fout_M_5_50.close()
-    log.log('Wrote M_5_50 to {f}'.format(f=args.out + '.'+ file_suffix +'.M_5_50'))
+    fout_M_5_50_fname = args.out + '.'+ file_suffix +'.M_5_50'
+    with open(fout_M_5_50_fname, 'w') as fout_M_5_50:
+        print('\t'.join(map(str,M_5_50)), file=fout_M_5_50)
+    log.log('Wrote M_5_50 to {f}'.format(f=fout_M_5_50_fname))
 
 
 if __name__ == '__main__':
@@ -168,3 +175,4 @@ if __name__ == '__main__':
     log.log('Analysis finished at {T}'.format(T=time.ctime()))
     time_elapsed = round(time.time()-start_time, 2)
     log.log('Total time elapsed: {T}'.format(T=sec_to_str(time_elapsed)))
+    log.close()
